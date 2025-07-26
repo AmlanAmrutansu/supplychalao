@@ -28,13 +28,6 @@ SupplyChalao is a comprehensive supply chain management solution aimed at stream
 
 ---
 
-## 🚀 Live Demo
-
-> Check out the animated overview:  
-> ![Dashboard Animation](https://media.giphy.com/media/l0MYB8Ory7Hqefo9a/giphy.gif)
-
----
-
 ## 📦 Tech Stack
 
 - **Frontend:** React.js (with Framer Motion & Lottie for animations), Bootstrap/TailwindCSS
@@ -81,13 +74,6 @@ npm start
 
 ---
 
-## 📺 Screenshots & Animations
-
-| Dashboard Overview | Order Tracking | Analytics |
-|--------------------|---------------|-----------|
-| ![Dashboard](https://media.giphy.com/media/xUPGcgtKxm4PADy3Ck/giphy.gif) | ![Order Tracking](https://media.giphy.com/media/3o7TKrWxI2uZ8gP2iM/giphy.gif) | ![Analytics](https://media.giphy.com/media/26FeV8KpEd1YbN1FK/giphy.gif) |
-
----
 
 ## 🤝 Contributing
 
