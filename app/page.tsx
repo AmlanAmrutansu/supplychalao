@@ -6,7 +6,10 @@ import { Package, Truck, Users, Shield } from "lucide-react"
 
 export default function HomePage() {
   // Check if environment variables are configured
-  const isConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const isConfigured =
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+    process.env.NEXT_PUBLIC_SUPABASE_URL !== "https://placeholder.supabase.co"
 
   return (
     <div className="min-h-screen">
