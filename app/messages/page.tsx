@@ -8,45 +8,33 @@ import { supabase } from "@/lib/supabase"
 import { ProtectedRoute } from "@/components/protected-route"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Toast, useToast } from "@/components/toast"
-import { Send, MessageSquare } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Send, MessageCircle } from "lucide-react"
 
 interface Message {
   id: string
   message: string
-  timestamp: string
   user_id: string
-  users?: {
-    name: string
-    email: string
-  }
+  created_at: string
+  user_email: string
+  user_name: string
 }
 
 export default function MessagesPage() {
-  const { user } = useAuth()
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState("")
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const { user } = useAuth()
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const { toast, showToast, hideToast } = useToast()
 
   useEffect(() => {
-    fetchMessages()
-
-    // Set up real-time subscription
-    const subscription = supabase
-      .channel("messages")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
-        fetchMessages() // Refetch messages on new message
-      })
-      .subscribe()
-
-    return () => {
-      subscription.unsubscribe()
+    if (user) {
+      fetchMessages()
+      subscribeToMessages()
     }
-  }, [])
+  }, [user])
 
   useEffect(() => {
     scrollToBottom()
@@ -61,26 +49,48 @@ export default function MessagesPage() {
       const { data, error } = await supabase
         .from("messages")
         .select(`
-          *,
-          users (
-            name,
-            email
-          )
+          id,
+          message,
+          user_id,
+          created_at,
+          user_email,
+          user_name
         `)
-        .order("timestamp", { ascending: true })
+        .order("created_at", { ascending: true })
 
       if (error) throw error
       setMessages(data || [])
     } catch (error) {
-      showToast("Error fetching messages", "error")
+      console.error("Error fetching messages:", error)
     } finally {
       setLoading(false)
     }
   }
 
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const subscribeToMessages = () => {
+    const channel = supabase
+      .channel("messages")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        (payload) => {
+          const newMessage = payload.new as Message
+          setMessages((prev) => [...prev, newMessage])
+        },
+      )
+      .subscribe()
 
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault()
     if (!newMessage.trim()) return
 
     setSending(true)
@@ -90,7 +100,8 @@ export default function MessagesPage() {
         {
           message: newMessage.trim(),
           user_id: user?.id,
-          timestamp: new Date().toISOString(),
+          user_email: user?.email,
+          user_name: user?.user_metadata?.full_name || user?.email?.split("@")[0],
         },
       ])
 
@@ -98,93 +109,117 @@ export default function MessagesPage() {
 
       setNewMessage("")
     } catch (error) {
-      showToast("Error sending message", "error")
+      console.error("Error sending message:", error)
     } finally {
       setSending(false)
     }
   }
 
   const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString()
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    } else {
+      return date.toLocaleDateString([], { month: "short", day: "numeric" })
+    }
+  }
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
   }
 
   return (
     <ProtectedRoute>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Messages</h1>
-          <p className="text-gray-600">Communicate with your team and track conversations.</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Team Messages</h1>
+            <p className="text-gray-600 mt-2">Communicate with your team in real-time</p>
+          </div>
 
-        <Card className="h-[600px] flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <MessageSquare className="h-5 w-5" />
-              <span>Team Chat</span>
-            </CardTitle>
-          </CardHeader>
+          <Card className="h-[600px] flex flex-col">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <MessageCircle className="h-5 w-5 mr-2" />
+                Team Chat
+              </CardTitle>
+              <CardDescription>Real-time messaging for your supply management team</CardDescription>
+            </CardHeader>
 
-          <CardContent className="flex-1 flex flex-col">
-            {/* Messages Container */}
-            <div className="flex-1 overflow-y-auto mb-4 space-y-4 p-4 bg-gray-50 rounded-lg">
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p>No messages yet. Start the conversation!</p>
-                </div>
-              ) : (
-                messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.user_id === user?.id ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        message.user_id === user?.id ? "bg-blue-600 text-white" : "bg-white text-gray-900 border"
-                      }`}
-                    >
-                      {message.user_id !== user?.id && (
-                        <p className="text-xs font-semibold mb-1 text-gray-600">
-                          {message.users?.name || message.users?.email || "Unknown User"}
-                        </p>
-                      )}
-                      <p className="text-sm">{message.message}</p>
-                      <p className={`text-xs mt-1 ${message.user_id === user?.id ? "text-blue-100" : "text-gray-500"}`}>
-                        {formatTime(message.timestamp)}
-                      </p>
-                    </div>
+            <CardContent className="flex-1 flex flex-col">
+              {/* Messages Area */}
+              <div className="flex-1 overflow-y-auto mb-4 space-y-4 max-h-96">
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   </div>
-                ))
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Message Input */}
-            <form onSubmit={sendMessage} className="flex space-x-2">
-              <Input
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type your message..."
-                disabled={sending}
-                className="flex-1"
-              />
-              <Button type="submit" disabled={sending || !newMessage.trim()}>
-                {sending ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : messages.length === 0 ? (
+                  <div className="text-center py-8">
+                    <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No messages yet</h3>
+                    <p className="text-gray-600">Start the conversation by sending the first message</p>
+                  </div>
                 ) : (
-                  <Send className="h-4 w-4" />
+                  messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.user_id === user?.id ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`flex max-w-xs lg:max-w-md ${
+                          message.user_id === user?.id ? "flex-row-reverse" : "flex-row"
+                        }`}
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="text-xs">{getInitials(message.user_name)}</AvatarFallback>
+                        </Avatar>
+                        <div
+                          className={`mx-2 px-4 py-2 rounded-lg ${
+                            message.user_id === user?.id ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-900"
+                          }`}
+                        >
+                          <p className="text-sm">{message.message}</p>
+                          <p
+                            className={`text-xs mt-1 ${
+                              message.user_id === user?.id ? "text-blue-100" : "text-gray-500"
+                            }`}
+                          >
+                            {message.user_id === user?.id ? "You" : message.user_name} •{" "}
+                            {formatTime(message.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
                 )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+                <div ref={messagesEndRef} />
+              </div>
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+              {/* Message Input */}
+              <form onSubmit={handleSendMessage} className="flex space-x-2">
+                <Input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  disabled={sending}
+                  className="flex-1"
+                />
+                <Button type="submit" disabled={sending || !newMessage.trim()}>
+                  <Send className="h-4 w-4" />
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </ProtectedRoute>
   )
 }

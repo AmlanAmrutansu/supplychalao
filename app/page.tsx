@@ -1,62 +1,54 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { SetupBanner } from "@/components/setup-banner"
-import { Package, Truck, Users, Shield } from "lucide-react"
+import { Package, Truck, Users, BarChart3 } from "lucide-react"
+import { useAuth } from "@/lib/auth"
 
 export default function HomePage() {
-  // Check if environment variables are configured
-  const isConfigured =
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
-    process.env.NEXT_PUBLIC_SUPABASE_URL !== "https://placeholder.supabase.co"
+  const { user } = useAuth()
 
   return (
-    <div className="min-h-screen">
-      {/* Setup Banner */}
-      {!isConfigured && <SetupBanner />}
-
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">Welcome to Supply Chalao</h1>
-            <p className="text-xl md:text-2xl mb-8 text-blue-100">
-              Your complete supply management solution. Track, manage, and optimize your supply chain with ease.
-            </p>
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            Welcome to <span className="text-blue-600">Supply Chalao</span>
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            Streamline your supply chain management with our comprehensive platform. Track orders, manage inventory, and
+            communicate with your team all in one place.
+          </p>
+
+          {user ? (
+            <Link href="/dashboard">
+              <Button size="lg" className="text-lg px-8 py-3">
+                Go to Dashboard
+              </Button>
+            </Link>
+          ) : (
             <div className="space-x-4">
               <Link href="/register">
-                <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100" disabled={!isConfigured}>
-                  {isConfigured ? "Get Started" : "Setup Required"}
+                <Button size="lg" className="text-lg px-8 py-3">
+                  Get Started
                 </Button>
               </Link>
               <Link href="/login">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-blue-600 bg-transparent"
-                  disabled={!isConfigured}
-                >
-                  {isConfigured ? "Login" : "Setup Required"}
+                <Button variant="outline" size="lg" className="text-lg px-8 py-3 bg-transparent">
+                  Sign In
                 </Button>
               </Link>
             </div>
-            {!isConfigured && (
-              <p className="text-sm text-blue-200 mt-4">
-                Please configure your Supabase environment variables to enable authentication
-              </p>
-            )}
-          </div>
+          )}
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why Choose Supply Chalao?</h2>
-            <p className="text-xl text-gray-600">Streamline your supply management with our powerful features</p>
-          </div>
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Why Choose Supply Chalao?</h2>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <Card className="text-center">
@@ -66,7 +58,7 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  Create, track, and manage all your supply orders in one place with real-time updates.
+                  Track and manage all your supply orders in real-time with status updates and notifications.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -74,10 +66,12 @@ export default function HomePage() {
             <Card className="text-center">
               <CardHeader>
                 <Truck className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <CardTitle>Real-time Tracking</CardTitle>
+                <CardTitle>Supply Tracking</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription>Monitor your orders with live status updates and delivery tracking.</CardDescription>
+                <CardDescription>
+                  Monitor your supply chain from order placement to delivery with detailed tracking information.
+                </CardDescription>
               </CardContent>
             </Card>
 
@@ -87,18 +81,20 @@ export default function HomePage() {
                 <CardTitle>Team Communication</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription>Collaborate with your team through integrated messaging system.</CardDescription>
+                <CardDescription>
+                  Collaborate with your team through integrated messaging and real-time updates.
+                </CardDescription>
               </CardContent>
             </Card>
 
             <Card className="text-center">
               <CardHeader>
-                <Shield className="h-12 w-12 text-red-600 mx-auto mb-4" />
-                <CardTitle>Secure & Reliable</CardTitle>
+                <BarChart3 className="h-12 w-12 text-orange-600 mx-auto mb-4" />
+                <CardTitle>Analytics & Reports</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  Your data is protected with enterprise-grade security and reliability.
+                  Get insights into your supply chain performance with detailed analytics and reporting.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -107,15 +103,20 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gray-100 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Ready to Get Started?</h2>
-          <p className="text-xl text-gray-600 mb-8">Join thousands of businesses already using Supply Chalao</p>
-          <Link href="/register">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700" disabled={!isConfigured}>
-              {isConfigured ? "Start Your Free Trial" : "Complete Setup First"}
-            </Button>
-          </Link>
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-blue-600">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-white mb-4">Ready to Transform Your Supply Chain?</h2>
+          <p className="text-xl text-blue-100 mb-8">
+            Join thousands of businesses already using Supply Chalao to streamline their operations.
+          </p>
+
+          {!user && (
+            <Link href="/register">
+              <Button size="lg" variant="secondary" className="text-lg px-8 py-3">
+                Start Free Trial
+              </Button>
+            </Link>
+          )}
         </div>
       </section>
     </div>

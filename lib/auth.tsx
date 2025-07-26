@@ -1,10 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { createContext, useContext, useEffect, useState } from "react"
 import type { User, AuthError } from "@supabase/supabase-js"
-import { supabase, isSupabaseConfigured } from "./supabase"
+import { supabase } from "./supabase"
 
 interface AuthContextType {
   user: User | null
@@ -12,7 +11,6 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: AuthError | null }>
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
-  isConfigured: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -20,14 +18,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const configured = isSupabaseConfigured()
 
   useEffect(() => {
-    if (!configured) {
-      setLoading(false)
-      return
-    }
-
     // Get initial session
     const getInitialSession = async () => {
       try {
@@ -54,13 +46,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [configured])
+  }, [])
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    if (!configured) {
-      return { error: new Error("Supabase not configured") as AuthError }
-    }
-
     try {
       const { error } = await supabase.auth.signUp({
         email,
@@ -78,10 +66,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
-    if (!configured) {
-      return { error: new Error("Supabase not configured") as AuthError }
-    }
-
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -94,8 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
-    if (!configured) return
-
     try {
       await supabase.auth.signOut()
     } catch (error) {
@@ -109,7 +91,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signIn,
     signOut,
-    isConfigured: configured,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

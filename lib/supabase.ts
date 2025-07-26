@@ -1,14 +1,11 @@
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = "https://kfxzmhlzyzvlsurewomx.supabase.co"
+const supabaseAnonKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmeHptaGx6eXp2bHN1cmV3b214Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzAxODUsImV4cCI6MjA2OTEwNjE4NX0.1rbX8FrzdiRP7JIUNTNvDKnWRKytINkgpDLjSyPxJTk"
 
-// For development, provide fallback values to prevent crashes
-const defaultUrl = supabaseUrl || "https://placeholder.supabase.co"
-const defaultKey = supabaseAnonKey || "placeholder-key"
-
-// Create client with fallback values
-export const supabase = createClient(defaultUrl, defaultKey)
+// Create client with fixed values
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Check if properly configured
 export const isSupabaseConfigured = () => {
@@ -20,7 +17,7 @@ let supabaseClient: ReturnType<typeof createClient> | null = null
 
 export const getSupabaseClient = () => {
   if (!supabaseClient) {
-    supabaseClient = createClient(defaultUrl, defaultKey)
+    supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
   }
   return supabaseClient
 }

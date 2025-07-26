@@ -8,41 +8,41 @@ import { supabase } from "@/lib/supabase"
 import { ProtectedRoute } from "@/components/protected-route"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { Toast, useToast } from "@/components/toast"
-import { User, SettingsIcon, Eye, EyeOff } from "lucide-react"
+import { User, Bell, Shield } from "lucide-react"
 
 interface UserSettings {
   id?: string
   user_id: string
-  notifications: boolean
+  notifications_enabled: boolean
+  email_updates: boolean
   theme: string
-  language: string
 }
 
 export default function SettingsPage() {
   const { user } = useAuth()
-  const [name, setName] = useState("")
+  const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [showPasswords, setShowPasswords] = useState(false)
   const [settings, setSettings] = useState<UserSettings>({
-    user_id: user?.id || "",
-    notifications: true,
+    user_id: "",
+    notifications_enabled: true,
+    email_updates: true,
     theme: "light",
-    language: "en",
   })
   const [loading, setLoading] = useState(false)
-  const [passwordLoading, setPasswordLoading] = useState(false)
-  const { toast, showToast, hideToast } = useToast()
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
 
   useEffect(() => {
     if (user) {
-      setName(user.user_metadata?.name || "")
+      setFullName(user.user_metadata?.full_name || "")
       setEmail(user.email || "")
       fetchSettings()
     }
@@ -52,47 +52,70 @@ export default function SettingsPage() {
     try {
       const { data, error } = await supabase.from("settings").select("*").eq("user_id", user?.id).single()
 
+      if (error && error.code !== "PGRST116") {
+        throw error
+      }
+
       if (data) {
         setSettings(data)
+      } else {
+        // Create default settings if none exist
+        const defaultSettings = {
+          user_id: user?.id || "",
+          notifications_enabled: true,
+          email_updates: true,
+          theme: "light",
+        }
+
+        const { error: insertError } = await supabase.from("settings").insert([defaultSettings])
+
+        if (!insertError) {
+          setSettings(defaultSettings)
+        }
       }
     } catch (error) {
-      // Settings might not exist yet, which is fine
+      console.error("Error fetching settings:", error)
     }
   }
 
-  const updateProfile = async (e: React.FormEvent) => {
+  const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setError("")
+    setSuccess("")
 
     try {
       const { error } = await supabase.auth.updateUser({
-        data: { name },
+        data: { full_name: fullName },
       })
 
       if (error) throw error
 
-      showToast("Profile updated successfully!", "success")
+      setSuccess("Profile updated successfully!")
     } catch (error: any) {
-      showToast(error.message, "error")
+      setError(error.message)
     } finally {
       setLoading(false)
     }
   }
 
-  const updatePassword = async (e: React.FormEvent) => {
+  const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
+    setError("")
+    setSuccess("")
 
     if (newPassword !== confirmPassword) {
-      showToast("New passwords do not match", "error")
+      setError("New passwords do not match")
+      setLoading(false)
       return
     }
 
     if (newPassword.length < 6) {
-      showToast("Password must be at least 6 characters", "error")
+      setError("Password must be at least 6 characters")
+      setLoading(false)
       return
     }
-
-    setPasswordLoading(true)
 
     try {
       const { error } = await supabase.auth.updateUser({
@@ -104,28 +127,27 @@ export default function SettingsPage() {
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
-      showToast("Password updated successfully!", "success")
+      setSuccess("Password updated successfully!")
     } catch (error: any) {
-      showToast(error.message, "error")
+      setError(error.message)
     } finally {
-      setPasswordLoading(false)
+      setLoading(false)
     }
   }
 
-  const updateSettings = async () => {
+  const handleSettingsUpdate = async () => {
     setLoading(true)
+    setError("")
+    setSuccess("")
 
     try {
-      const { error } = await supabase.from("settings").upsert({
-        ...settings,
-        user_id: user?.id,
-      })
+      const { error } = await supabase.from("settings").upsert([settings])
 
       if (error) throw error
 
-      showToast("Settings updated successfully!", "success")
+      setSuccess("Settings updated successfully!")
     } catch (error: any) {
-      showToast("Error updating settings", "error")
+      setError(error.message)
     } finally {
       setLoading(false)
     }
@@ -133,146 +155,141 @@ export default function SettingsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-          <p className="text-gray-600">Manage your account settings and preferences.</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+            <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
+          </div>
 
-        <div className="space-y-6">
-          {/* Profile Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <User className="h-5 w-5" />
-                <span>Profile Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={updateProfile} className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your full name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={email} disabled className="bg-gray-50" />
-                  <p className="text-sm text-gray-500 mt-1">Email cannot be changed. Contact support if needed.</p>
-                </div>
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Updating..." : "Update Profile"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-          {/* Password Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Change Password</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={updatePassword} className="space-y-4">
-                <div>
-                  <Label htmlFor="newPassword">New Password</Label>
-                  <div className="relative">
+          {success && (
+            <Alert className="mb-6 border-green-200 bg-green-50">
+              <AlertDescription className="text-green-800">{success}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-6">
+            {/* Profile Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <User className="h-5 w-5 mr-2" />
+                  Profile Information
+                </CardTitle>
+                <CardDescription>Update your personal information and account details</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleProfileUpdate} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName">Full Name</Label>
+                      <Input
+                        id="fullName"
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Enter your full name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input id="email" type="email" value={email} disabled className="bg-gray-50" />
+                      <p className="text-xs text-gray-500">Email cannot be changed. Contact support if needed.</p>
+                    </div>
+                  </div>
+                  <Button type="submit" disabled={loading}>
+                    {loading ? "Updating..." : "Update Profile"}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Password Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Shield className="h-5 w-5 mr-2" />
+                  Change Password
+                </CardTitle>
+                <CardDescription>Update your password to keep your account secure</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handlePasswordUpdate} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">New Password</Label>
                     <Input
                       id="newPassword"
-                      type={showPasswords ? "text" : "password"}
+                      type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Enter new password"
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full px-3"
-                      onClick={() => setShowPasswords(!showPasswords)}
-                    >
-                      {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
                   </div>
-                </div>
-                <div>
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    type={showPasswords ? "text" : "password"}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password"
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                    />
+                  </div>
+                  <Button type="submit" disabled={loading || !newPassword}>
+                    {loading ? "Updating..." : "Update Password"}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Notification Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Bell className="h-5 w-5 mr-2" />
+                  Notification Preferences
+                </CardTitle>
+                <CardDescription>Manage how you receive notifications and updates</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Push Notifications</Label>
+                    <p className="text-sm text-gray-500">Receive notifications about order updates</p>
+                  </div>
+                  <Switch
+                    checked={settings.notifications_enabled}
+                    onCheckedChange={(checked) => setSettings({ ...settings, notifications_enabled: checked })}
                   />
                 </div>
-                <Button type="submit" disabled={passwordLoading}>
-                  {passwordLoading ? "Updating..." : "Update Password"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
 
-          {/* App Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <SettingsIcon className="h-5 w-5" />
-                <span>Application Settings</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Email Notifications</Label>
-                  <p className="text-sm text-gray-500">Receive email notifications for order updates</p>
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Email Updates</Label>
+                    <p className="text-sm text-gray-500">Receive email notifications for important updates</p>
+                  </div>
+                  <Switch
+                    checked={settings.email_updates}
+                    onCheckedChange={(checked) => setSettings({ ...settings, email_updates: checked })}
+                  />
                 </div>
-                <Button
-                  variant={settings.notifications ? "default" : "outline"}
-                  onClick={() => setSettings({ ...settings, notifications: !settings.notifications })}
-                >
-                  {settings.notifications ? "Enabled" : "Disabled"}
+
+                <Button onClick={handleSettingsUpdate} disabled={loading}>
+                  {loading ? "Saving..." : "Save Preferences"}
                 </Button>
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Theme</Label>
-                  <p className="text-sm text-gray-500">Choose your preferred theme</p>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => setSettings({ ...settings, theme: settings.theme === "light" ? "dark" : "light" })}
-                >
-                  {settings.theme === "light" ? "Light" : "Dark"}
-                </Button>
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Language</Label>
-                  <p className="text-sm text-gray-500">Select your preferred language</p>
-                </div>
-                <Button variant="outline">English</Button>
-              </div>
-
-              <Button onClick={updateSettings} disabled={loading} className="w-full">
-                {loading ? "Saving..." : "Save Settings"}
-              </Button>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
-
-      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
     </ProtectedRoute>
   )
 }
