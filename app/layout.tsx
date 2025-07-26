@@ -9,8 +9,8 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Supply Chalao - Supply Management System",
-  description: "Complete supply management solution for tracking and managing your supply chain",
+  title: "Supply Chalao - Supply Chain Management",
+  description: "Streamline your supply chain operations with our comprehensive management platform",
     generator: 'v0.dev'
 }
 

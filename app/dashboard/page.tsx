@@ -1,26 +1,34 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
+import { ProtectedRoute } from "@/components/protected-route"
 import { useAuth } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
-import { ProtectedRoute } from "@/components/protected-route"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Package, Truck, Clock, CheckCircle } from "lucide-react"
+import { Package, Plus, TrendingUp, Clock, CheckCircle } from "lucide-react"
 import Link from "next/link"
 
 interface Order {
   id: string
   title: string
   description: string
-  status: string
+  status: "pending" | "in_progress" | "delivered" | "cancelled"
   created_at: string
+}
+
+interface Stats {
+  total: number
+  pending: number
+  in_progress: number
+  delivered: number
 }
 
 export default function DashboardPage() {
   const { user } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
+  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, in_progress: 0, delivered: 0 })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -36,26 +44,28 @@ export default function DashboardPage() {
         .select("*")
         .eq("user_id", user?.id)
         .order("created_at", { ascending: false })
+        .limit(5)
 
       if (error) throw error
+
       setOrders(data || [])
+
+      // Calculate stats
+      const { data: allOrders } = await supabase.from("orders").select("status").eq("user_id", user?.id)
+
+      if (allOrders) {
+        const newStats = {
+          total: allOrders.length,
+          pending: allOrders.filter((o) => o.status === "pending").length,
+          in_progress: allOrders.filter((o) => o.status === "in_progress").length,
+          delivered: allOrders.filter((o) => o.status === "delivered").length,
+        }
+        setStats(newStats)
+      }
     } catch (error) {
       console.error("Error fetching orders:", error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <Clock className="h-4 w-4" />
-      case "in_progress":
-        return <Truck className="h-4 w-4" />
-      case "delivered":
-        return <CheckCircle className="h-4 w-4" />
-      default:
-        return <Package className="h-4 w-4" />
     }
   }
 
@@ -74,6 +84,14 @@ export default function DashboardPage() {
     }
   }
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  }
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 py-8">
@@ -83,77 +101,67 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold text-gray-900">
               Welcome back, {user?.user_metadata?.full_name || user?.email}!
             </h1>
-            <p className="text-gray-600 mt-2">Manage your supply orders and track their progress</p>
+            <p className="text-gray-600 mt-2">Here's an overview of your supply chain operations.</p>
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <Package className="h-8 w-8 text-blue-600" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Orders</p>
-                    <p className="text-2xl font-bold text-gray-900">{orders.length}</p>
-                  </div>
-                </div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+                <Package className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.total}</div>
+                <p className="text-xs text-muted-foreground">All time orders</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <Clock className="h-8 w-8 text-yellow-600" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Pending</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {orders.filter((order) => order.status === "pending").length}
-                    </p>
-                  </div>
-                </div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pending</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.pending}</div>
+                <p className="text-xs text-muted-foreground">Awaiting processing</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <Truck className="h-8 w-8 text-blue-600" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">In Progress</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {orders.filter((order) => order.status === "in_progress").length}
-                    </p>
-                  </div>
-                </div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.in_progress}</div>
+                <p className="text-xs text-muted-foreground">Currently processing</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Delivered</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {orders.filter((order) => order.status === "delivered").length}
-                    </p>
-                  </div>
-                </div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Delivered</CardTitle>
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.delivered}</div>
+                <p className="text-xs text-muted-foreground">Successfully completed</p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Orders Section */}
+          {/* Recent Orders */}
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Recent Orders</CardTitle>
-                  <CardDescription>Track and manage your supply orders</CardDescription>
+                  <CardDescription>Your latest supply chain orders</CardDescription>
                 </div>
                 <Link href="/orders/new">
                   <Button>
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="mr-2 h-4 w-4" />
                     New Order
                   </Button>
                 </Link>
@@ -161,46 +169,47 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="flex justify-center py-8">
+                <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
               ) : orders.length === 0 ? (
                 <div className="text-center py-8">
-                  <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
-                  <p className="text-gray-600 mb-4">Get started by creating your first supply order</p>
-                  <Link href="/orders/new">
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Order
-                    </Button>
-                  </Link>
+                  <Package className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No orders yet</h3>
+                  <p className="mt-1 text-sm text-gray-500">Get started by creating your first order.</p>
+                  <div className="mt-6">
+                    <Link href="/orders/new">
+                      <Button>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Order
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {orders.map((order) => (
-                    <div
-                      key={order.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                    >
-                      <div className="flex items-center space-x-4">
-                        {getStatusIcon(order.status)}
-                        <div>
-                          <h3 className="font-medium text-gray-900">{order.title}</h3>
-                          <p className="text-sm text-gray-600">{order.description}</p>
-                          <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString()}</p>
-                        </div>
+                    <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">{order.title}</h3>
+                        <p className="text-sm text-gray-600 mt-1">{order.description}</p>
+                        <p className="text-xs text-gray-500 mt-2">Created on {formatDate(order.created_at)}</p>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-4">
                         <Badge className={getStatusColor(order.status)}>{order.status.replace("_", " ")}</Badge>
                         <Link href={`/orders/edit/${order.id}`}>
                           <Button variant="outline" size="sm">
-                            Edit
+                            View
                           </Button>
                         </Link>
                       </div>
                     </div>
                   ))}
+                  <div className="text-center pt-4">
+                    <Link href="/orders">
+                      <Button variant="outline">View All Orders</Button>
+                    </Link>
+                  </div>
                 </div>
               )}
             </CardContent>

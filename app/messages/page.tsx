@@ -3,22 +3,22 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
+import { ProtectedRoute } from "@/components/protected-route"
 import { useAuth } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
-import { ProtectedRoute } from "@/components/protected-route"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Send, MessageCircle } from "lucide-react"
+import { Send, MessageSquare } from "lucide-react"
 
 interface Message {
   id: string
-  message: string
   user_id: string
-  created_at: string
+  message: string
   user_email: string
   user_name: string
+  created_at: string
 }
 
 export default function MessagesPage() {
@@ -46,19 +46,10 @@ export default function MessagesPage() {
 
   const fetchMessages = async () => {
     try {
-      const { data, error } = await supabase
-        .from("messages")
-        .select(`
-          id,
-          message,
-          user_id,
-          created_at,
-          user_email,
-          user_name
-        `)
-        .order("created_at", { ascending: true })
+      const { data, error } = await supabase.from("messages").select("*").order("created_at", { ascending: true })
 
       if (error) throw error
+
       setMessages(data || [])
     } catch (error) {
       console.error("Error fetching messages:", error)
@@ -70,18 +61,9 @@ export default function MessagesPage() {
   const subscribeToMessages = () => {
     const channel = supabase
       .channel("messages")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-        },
-        (payload) => {
-          const newMessage = payload.new as Message
-          setMessages((prev) => [...prev, newMessage])
-        },
-      )
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        setMessages((current) => [...current, payload.new as Message])
+      })
       .subscribe()
 
     return () => {
@@ -89,19 +71,18 @@ export default function MessagesPage() {
     }
   }
 
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newMessage.trim()) return
 
     setSending(true)
-
     try {
       const { error } = await supabase.from("messages").insert([
         {
-          message: newMessage.trim(),
           user_id: user?.id,
-          user_email: user?.email,
-          user_name: user?.user_metadata?.full_name || user?.email?.split("@")[0],
+          message: newMessage.trim(),
+          user_email: user?.email || "",
+          user_name: user?.user_metadata?.full_name || user?.email || "Anonymous",
         },
       ])
 
@@ -115,88 +96,115 @@ export default function MessagesPage() {
     }
   }
 
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
 
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    if (date.toDateString() === today.toDateString()) {
+      return "Today"
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return "Yesterday"
     } else {
-      return date.toLocaleDateString([], { month: "short", day: "numeric" })
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })
     }
   }
 
   const getInitials = (name: string) => {
     return name
       .split(" ")
-      .map((n) => n[0])
+      .map((word) => word[0])
       .join("")
       .toUpperCase()
       .slice(0, 2)
   }
 
+  const groupMessagesByDate = (messages: Message[]) => {
+    const groups: { [key: string]: Message[] } = {}
+
+    messages.forEach((message) => {
+      const date = new Date(message.created_at).toDateString()
+      if (!groups[date]) {
+        groups[date] = []
+      }
+      groups[date].push(message)
+    })
+
+    return groups
+  }
+
+  const messageGroups = groupMessagesByDate(messages)
+
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Team Messages</h1>
-            <p className="text-gray-600 mt-2">Communicate with your team in real-time</p>
-          </div>
-
-          <Card className="h-[600px] flex flex-col">
-            <CardHeader>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          <Card className="h-[calc(100vh-8rem)]">
+            <CardHeader className="border-b">
               <CardTitle className="flex items-center">
-                <MessageCircle className="h-5 w-5 mr-2" />
-                Team Chat
+                <MessageSquare className="mr-2 h-5 w-5" />
+                Team Messages
               </CardTitle>
-              <CardDescription>Real-time messaging for your supply management team</CardDescription>
             </CardHeader>
-
-            <CardContent className="flex-1 flex flex-col">
+            <CardContent className="flex flex-col h-full p-0">
               {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto mb-4 space-y-4 max-h-96">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {loading ? (
-                  <div className="flex justify-center py-8">
+                  <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="text-center py-8">
-                    <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No messages yet</h3>
-                    <p className="text-gray-600">Start the conversation by sending the first message</p>
+                    <MessageSquare className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No messages yet</h3>
+                    <p className="mt-1 text-sm text-gray-500">Start a conversation with your team.</p>
                   </div>
                 ) : (
-                  messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.user_id === user?.id ? "justify-end" : "justify-start"}`}
-                    >
-                      <div
-                        className={`flex max-w-xs lg:max-w-md ${
-                          message.user_id === user?.id ? "flex-row-reverse" : "flex-row"
-                        }`}
-                      >
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs">{getInitials(message.user_name)}</AvatarFallback>
-                        </Avatar>
+                  Object.entries(messageGroups).map(([date, dateMessages]) => (
+                    <div key={date}>
+                      <div className="flex justify-center mb-4">
+                        <span className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full">
+                          {formatDate(date)}
+                        </span>
+                      </div>
+                      {dateMessages.map((message) => (
                         <div
-                          className={`mx-2 px-4 py-2 rounded-lg ${
-                            message.user_id === user?.id ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-900"
+                          key={message.id}
+                          className={`flex items-start space-x-3 mb-4 ${
+                            message.user_id === user?.id ? "flex-row-reverse space-x-reverse" : ""
                           }`}
                         >
-                          <p className="text-sm">{message.message}</p>
-                          <p
-                            className={`text-xs mt-1 ${
-                              message.user_id === user?.id ? "text-blue-100" : "text-gray-500"
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="text-xs">{getInitials(message.user_name)}</AvatarFallback>
+                          </Avatar>
+                          <div
+                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                              message.user_id === user?.id ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"
                             }`}
                           >
-                            {message.user_id === user?.id ? "You" : message.user_name} •{" "}
-                            {formatTime(message.created_at)}
-                          </p>
+                            <div className="text-sm">{message.message}</div>
+                            <div
+                              className={`text-xs mt-1 ${
+                                message.user_id === user?.id ? "text-blue-100" : "text-gray-500"
+                              }`}
+                            >
+                              {message.user_id === user?.id ? "You" : message.user_name} •{" "}
+                              {formatTime(message.created_at)}
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
                   ))
                 )}
@@ -204,18 +212,20 @@ export default function MessagesPage() {
               </div>
 
               {/* Message Input */}
-              <form onSubmit={handleSendMessage} className="flex space-x-2">
-                <Input
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  disabled={sending}
-                  className="flex-1"
-                />
-                <Button type="submit" disabled={sending || !newMessage.trim()}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
+              <div className="border-t p-4">
+                <form onSubmit={sendMessage} className="flex space-x-2">
+                  <Input
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    disabled={sending}
+                    className="flex-1"
+                  />
+                  <Button type="submit" disabled={sending || !newMessage.trim()}>
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </form>
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -3,45 +3,54 @@
 import Link from "next/link"
 import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
-import { Package, Menu, X } from "lucide-react"
-import { useState } from "react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { User, LogOut, Settings } from "lucide-react"
 
 export function Navbar() {
-  const { user, signOut, loading } = useAuth()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
-  const handleSignOut = async () => {
-    await signOut()
-    setMobileMenuOpen(false)
-  }
+  const { user, signOut } = useAuth()
 
   return (
-    <nav className="bg-white shadow-sm border-b">
+    <nav className="border-b bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2">
-              <Package className="h-8 w-8 text-blue-600" />
-              <span className="text-xl font-bold text-gray-900">Supply Chalao</span>
+            <Link href="/" className="text-xl font-bold text-blue-600">
+              Supply Chalao
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-4">
-            {!loading && user ? (
+          <div className="flex items-center space-x-4">
+            {user ? (
               <>
                 <Link href="/dashboard">
                   <Button variant="ghost">Dashboard</Button>
                 </Link>
+                <Link href="/orders/new">
+                  <Button variant="ghost">New Order</Button>
+                </Link>
                 <Link href="/messages">
                   <Button variant="ghost">Messages</Button>
                 </Link>
-                <Link href="/settings">
-                  <Button variant="ghost">Settings</Button>
-                </Link>
-                <Button onClick={handleSignOut} variant="outline">
-                  Sign Out
-                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <User className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link href="/settings" className="flex items-center">
+                        <Settings className="mr-2 h-4 w-4" />
+                        Settings
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={signOut} className="flex items-center">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               <>
@@ -49,60 +58,12 @@ export function Navbar() {
                   <Button variant="ghost">Login</Button>
                 </Link>
                 <Link href="/register">
-                  <Button>Register</Button>
+                  <Button>Sign Up</Button>
                 </Link>
               </>
             )}
           </div>
-
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
-            <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </Button>
-          </div>
         </div>
-
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
-              {!loading && user ? (
-                <>
-                  <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">
-                      Dashboard
-                    </Button>
-                  </Link>
-                  <Link href="/messages" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">
-                      Messages
-                    </Button>
-                  </Link>
-                  <Link href="/settings" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">
-                      Settings
-                    </Button>
-                  </Link>
-                  <Button onClick={handleSignOut} variant="outline" className="w-full justify-start bg-transparent">
-                    Sign Out
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">
-                      Login
-                    </Button>
-                  </Link>
-                  <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full justify-start">Register</Button>
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </nav>
   )

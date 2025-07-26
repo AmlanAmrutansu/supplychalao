@@ -11,15 +11,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Package } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
   const { signUp } = useAuth()
   const router = useRouter()
@@ -61,11 +61,13 @@ export default function RegisterPage() {
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <Package className="h-12 w-12 text-green-600" />
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
               </div>
-              <h2 className="text-2xl font-bold text-green-600 mb-2">Registration Successful!</h2>
-              <p className="text-gray-600">Welcome to Supply Chalao! Redirecting you to the dashboard...</p>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">Account Created Successfully!</h3>
+              <p className="mt-2 text-sm text-gray-600">Welcome to Supply Chalao. Redirecting to your dashboard...</p>
             </div>
           </CardContent>
         </Card>
@@ -76,12 +78,9 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Package className="h-12 w-12 text-blue-600" />
-          </div>
-          <CardTitle className="text-2xl font-bold">Join Supply Chalao</CardTitle>
-          <CardDescription>Create your account to start managing your supply chain</CardDescription>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
+          <CardDescription className="text-center">Sign up to get started with Supply Chalao</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -96,10 +95,10 @@ export default function RegisterPage() {
               <Input
                 id="fullName"
                 type="text"
+                placeholder="Enter your full name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
-                placeholder="Enter your full name"
               />
             </div>
 
@@ -108,10 +107,10 @@ export default function RegisterPage() {
               <Input
                 id="email"
                 type="email"
+                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="Enter your email"
               />
             </div>
 
@@ -120,10 +119,10 @@ export default function RegisterPage() {
               <Input
                 id="password"
                 type="password"
+                placeholder="Create a password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                placeholder="Create a password"
               />
             </div>
 
@@ -132,15 +131,16 @@ export default function RegisterPage() {
               <Input
                 id="confirmPassword"
                 type="password"
+                placeholder="Confirm your password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                placeholder="Confirm your password"
               />
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating Account..." : "Create Account"}
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Create Account
             </Button>
           </form>
 
