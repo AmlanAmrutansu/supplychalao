@@ -87,9 +87,15 @@ npm start
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+Copyright (c) 2025 Ravi Narayan Mohapatra
 
----
+All rights reserved.
+
+Unauthorized copying of this file, via any medium is strictly prohibited.
+Proprietary and confidential.
+
+Written permission must be obtained from the author (Ravi Narayan Mohapatra) for any use.
+
 
 ## 💡 Inspiration
 
