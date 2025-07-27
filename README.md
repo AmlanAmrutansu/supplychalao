@@ -105,14 +105,13 @@
 
 ## ❓ Support
 
-For any help, create an issue in this repo or contact [your-email@example.com].
+For any help, create an issue in this repo or contact amlanamrutansu@gmail.com
 
 ---
 
 ## 📄 License
 
-MIT License
-
----
+All rights reserved. This project is the intellectual property of Trishul Team.  
+No part of this codebase may be copied, distributed, or used without explicit written permission.
 
 > Streamlining supply chains, one order at a time.
