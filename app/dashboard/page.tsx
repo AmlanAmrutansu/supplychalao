@@ -1,67 +1,78 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { ProtectedRoute } from "@/components/protected-route"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ProtectedRoute } from "@/components/protected-route"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Package, Plus, TrendingUp, Clock, CheckCircle } from "lucide-react"
+import { Progress } from "@/components/ui/progress"
+import { Plus, Package, Truck, MessageSquare, TrendingUp } from "lucide-react"
 import Link from "next/link"
 
 interface Order {
   id: string
-  title: string
-  description: string
-  status: "pending" | "in_progress" | "delivered" | "cancelled"
+  item_name: string
+  quantity: number
+  status: string
   created_at: string
+  supplier: string
+  delivery_date: string
 }
 
-interface Stats {
-  total: number
-  pending: number
-  in_progress: number
-  delivered: number
+interface ZoneData {
+  name: string
+  totalOrders: number
+  moq: number
+  progress: number
+  isMoqMet: boolean
 }
 
 export default function DashboardPage() {
   const { user } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
-  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, in_progress: 0, delivered: 0 })
   const [loading, setLoading] = useState(true)
 
+  // Hardcoded zone data as requested
+  const zoneData: ZoneData[] = [
+    {
+      name: "Zone A",
+      totalOrders: 52,
+      moq: 100,
+      progress: 52,
+      isMoqMet: false,
+    },
+    {
+      name: "Zone B",
+      totalOrders: 87,
+      moq: 100,
+      progress: 87,
+      isMoqMet: false,
+    },
+    {
+      name: "Zone C",
+      totalOrders: 103,
+      moq: 100,
+      progress: 100,
+      isMoqMet: true,
+    },
+  ]
+
   useEffect(() => {
-    if (user) {
-      fetchOrders()
-    }
-  }, [user])
+    fetchOrders()
+  }, [])
 
   const fetchOrders = async () => {
     try {
       const { data, error } = await supabase
         .from("orders")
         .select("*")
-        .eq("user_id", user?.id)
         .order("created_at", { ascending: false })
         .limit(5)
 
       if (error) throw error
-
       setOrders(data || [])
-
-      // Calculate stats
-      const { data: allOrders } = await supabase.from("orders").select("status").eq("user_id", user?.id)
-
-      if (allOrders) {
-        const newStats = {
-          total: allOrders.length,
-          pending: allOrders.filter((o) => o.status === "pending").length,
-          in_progress: allOrders.filter((o) => o.status === "in_progress").length,
-          delivered: allOrders.filter((o) => o.status === "delivered").length,
-        }
-        setStats(newStats)
-      }
     } catch (error) {
       console.error("Error fetching orders:", error)
     } finally {
@@ -70,11 +81,13 @@ export default function DashboardPage() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "pending":
         return "bg-yellow-100 text-yellow-800"
-      case "in_progress":
+      case "processing":
         return "bg-blue-100 text-blue-800"
+      case "shipped":
+        return "bg-purple-100 text-purple-800"
       case "delivered":
         return "bg-green-100 text-green-800"
       case "cancelled":
@@ -84,24 +97,14 @@ export default function DashboardPage() {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
-  }
-
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Welcome back, {user?.user_metadata?.full_name || user?.email}!
-            </h1>
-            <p className="text-gray-600 mt-2">Here's an overview of your supply chain operations.</p>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600">Welcome back, {user?.email}</p>
           </div>
 
           {/* Stats Cards */}
@@ -112,231 +115,168 @@ export default function DashboardPage() {
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.total}</div>
-                <p className="text-xs text-muted-foreground">All time orders</p>
+                <div className="text-2xl font-bold">242</div>
+                <p className="text-xs text-muted-foreground">+12% from last month</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Active Shipments</CardTitle>
+                <Truck className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.pending}</div>
-                <p className="text-xs text-muted-foreground">Awaiting processing</p>
+                <div className="text-2xl font-bold">18</div>
+                <p className="text-xs text-muted-foreground">+3 from yesterday</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                <CardTitle className="text-sm font-medium">Messages</CardTitle>
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">7</div>
+                <p className="text-xs text-muted-foreground">2 unread</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Performance</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.in_progress}</div>
-                <p className="text-xs text-muted-foreground">Currently processing</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Delivered</CardTitle>
-                <CheckCircle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.delivered}</div>
-                <p className="text-xs text-muted-foreground">Successfully completed</p>
+                <div className="text-2xl font-bold">94%</div>
+                <p className="text-xs text-muted-foreground">On-time delivery</p>
               </CardContent>
             </Card>
           </div>
 
+          {/* Quick Actions */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+            <div className="flex flex-wrap gap-4">
+              <Link href="/orders/new">
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  New Order
+                </Button>
+              </Link>
+              <Link href="/messages">
+                <Button variant="outline">View Messages</Button>
+              </Link>
+              <Link href="/settings">
+                <Button variant="outline">Settings</Button>
+              </Link>
+            </div>
+          </div>
+
           {/* Recent Orders */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Recent Orders</CardTitle>
-                  <CardDescription>Your latest supply chain orders</CardDescription>
-                </div>
-                <Link href="/orders/new">
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    New Order
-                  </Button>
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-              ) : orders.length === 0 ? (
-                <div className="text-center py-8">
-                  <Package className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No orders yet</h3>
-                  <p className="mt-1 text-sm text-gray-500">Get started by creating your first order.</p>
-                  <div className="mt-6">
-                    <Link href="/orders/new">
-                      <Button>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Order
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {orders.map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{order.title}</h3>
-                        <p className="text-sm text-gray-600 mt-1">{order.description}</p>
-                        <p className="text-xs text-gray-500 mt-2">Created on {formatDate(order.created_at)}</p>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <Badge className={getStatusColor(order.status)}>{order.status.replace("_", " ")}</Badge>
-                        <Link href={`/orders/edit/${order.id}`}>
-                          <Button variant="outline" size="sm">
-                            View
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="text-center pt-4">
-                    <Link href="/orders">
-                      <Button variant="outline">View All Orders</Button>
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Recent Orders</h2>
+              <Link href="/orders">
+                <Button variant="outline" size="sm">
+                  View All
+                </Button>
+              </Link>
+            </div>
 
-          {/* Zone-wise Order Summary */}
-          <div className="mt-8">
             <Card>
-              <CardHeader>
-                <CardTitle>Zone-wise Order Summary</CardTitle>
-                <CardDescription>Track orders and MOQ progress across different zones</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Zone A */}
-                  <div className="bg-white border rounded-lg p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Zone A</h3>
-                      <Badge className={52 >= 100 ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
-                        {52 >= 100 ? "✅ MOQ Met" : "⚠️ Below MOQ"}
-                      </Badge>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Total Orders</span>
-                        <span className="font-medium">{52}</span>
-                      </div>
-
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">MOQ Required</span>
-                        <span className="font-medium">100</span>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Progress</span>
-                          <span className="font-medium">{Math.min(52, 100)}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full transition-all duration-300 ${
-                              52 >= 100 ? "bg-green-500" : "bg-yellow-500"
-                            }`}
-                            style={{ width: `${Math.min((52 / 100) * 100, 100)}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
+              <CardContent className="p-0">
+                {loading ? (
+                  <div className="p-6 text-center text-gray-500">Loading orders...</div>
+                ) : orders.length === 0 ? (
+                  <div className="p-6 text-center text-gray-500">
+                    No orders found.{" "}
+                    <Link href="/orders/new" className="text-blue-600 hover:underline">
+                      Create your first order
+                    </Link>
                   </div>
-
-                  {/* Zone B */}
-                  <div className="bg-white border rounded-lg p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Zone B</h3>
-                      <Badge className={87 >= 100 ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
-                        {87 >= 100 ? "✅ MOQ Met" : "⚠️ Below MOQ"}
-                      </Badge>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Total Orders</span>
-                        <span className="font-medium">{87}</span>
-                      </div>
-
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">MOQ Required</span>
-                        <span className="font-medium">100</span>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Progress</span>
-                          <span className="font-medium">{Math.min(87, 100)}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full transition-all duration-300 ${
-                              87 >= 100 ? "bg-green-500" : "bg-yellow-500"
-                            }`}
-                            style={{ width: `${Math.min((87 / 100) * 100, 100)}%` }}
-                          ></div>
+                ) : (
+                  <div className="divide-y">
+                    {orders.map((order) => (
+                      <div key={order.id} className="p-4 hover:bg-gray-50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-medium text-gray-900">{order.item_name}</h3>
+                            <p className="text-sm text-gray-500">
+                              Quantity: {order.quantity} • Supplier: {order.supplier}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              Created: {new Date(order.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+                            <Link href={`/orders/edit/${order.id}`}>
+                              <Button variant="ghost" size="sm">
+                                Edit
+                              </Button>
+                            </Link>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-
-                  {/* Zone C */}
-                  <div className="bg-white border rounded-lg p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Zone C</h3>
-                      <Badge className={103 >= 100 ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
-                        {103 >= 100 ? "✅ MOQ Met" : "⚠️ Below MOQ"}
-                      </Badge>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Total Orders</span>
-                        <span className="font-medium">{103}</span>
-                      </div>
-
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">MOQ Required</span>
-                        <span className="font-medium">100</span>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Progress</span>
-                          <span className="font-medium">{Math.min(103, 100)}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full transition-all duration-300 ${
-                              103 >= 100 ? "bg-green-500" : "bg-yellow-500"
-                            }`}
-                            style={{ width: `${Math.min((103 / 100) * 100, 100)}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
+          </div>
+
+          {/* Zone-wise Order Summary */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Zone-wise Order Summary</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {zoneData.map((zone) => (
+                <Card key={zone.name} className="shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg font-semibold text-gray-900">{zone.name}</CardTitle>
+                      <Badge
+                        variant={zone.isMoqMet ? "default" : "secondary"}
+                        className={zone.isMoqMet ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}
+                      >
+                        {zone.isMoqMet ? "✅ MOQ Met" : "⚠️ Below MOQ"}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Total Orders</span>
+                      <span className="text-2xl font-bold text-gray-900">{zone.totalOrders}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">MOQ Target</span>
+                      <span className="text-sm font-medium text-gray-900">{zone.moq}</span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Progress</span>
+                        <span className="text-sm font-medium text-gray-900">{zone.progress}%</span>
+                      </div>
+                      <Progress
+                        value={zone.progress}
+                        className="h-2"
+                        style={{
+                          backgroundColor: "#f3f4f6",
+                        }}
+                      />
+                    </div>
+
+                    <div className="text-xs text-gray-500 pt-2">
+                      {zone.isMoqMet
+                        ? `Exceeded MOQ by ${zone.totalOrders - zone.moq} orders`
+                        : `${zone.moq - zone.totalOrders} more orders needed to reach MOQ`}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </div>
