@@ -1,112 +1,174 @@
-# SupplyChalao
+# Supply Chalao - Supply Management System
 
-SupplyChalao is a comprehensive supply chain management solution aimed at streamlining, tracking, and optimizing logistics and inventory for businesses. The project leverages modern web technologies, robust backend services, and animated, interactive dashboards to deliver a visually engaging and efficient user experience.
+A modern, full-stack supply management website built with Next.js and Supabase.
 
-![SupplyChalao Animation](https://media.giphy.com/media/3oKIPnAiaMCws8nOsE/giphy.gif)
+## 🚨 IMPORTANT: Setup Required
 
----
+Before running the application, you **MUST** configure your Supabase environment variables:
 
-## ✨ Features
+### Quick Setup Steps:
 
-- **Real-time Inventory Tracking**  
-  Stay updated with live inventory levels, automated alerts, and dynamic stock views.
+1. **Create a Supabase project** at [supabase.com](https://supabase.com)
+2. **Get your credentials** from Project Settings → API
+3. **Create `.env.local`** in your project root:
+   \`\`\`env
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   \`\`\`
+4. **Run the database script** from `scripts/create-tables.sql` in your Supabase SQL Editor
+5. **Start the development server**: `npm run dev`
 
-- **Order Management**  
-  Effortlessly create, update, and fulfill orders with smooth transitions and feedback animations.
+## Features
 
-- **Supplier & Vendor Coordination**  
-  Integrated supplier management, with animated status indicators for communication and contract status.
+- 🔐 **Authentication**: Secure email/password authentication with Supabase
+- 📦 **Order Management**: Create, read, update, and delete supply orders
+- 💬 **Real-time Messaging**: Team communication with live updates
+- ⚙️ **Settings Management**: User profile and application preferences
+- 📱 **Responsive Design**: Works perfectly on desktop and mobile
+- 🔄 **Real-time Updates**: Live updates for orders and messages
+- 🎨 **Modern UI**: Clean, light-themed interface with Tailwind CSS
 
-- **Logistics Visualization**  
-  Interactive maps and animated delivery tracking, making supply chain logistics transparent and efficient.
+## Tech Stack
 
-- **Analytics Dashboard**  
-  Visual graphs, animated charts, and insightful metrics for data-driven decision making.
+- **Frontend**: Next.js 14, React, TypeScript
+- **Backend**: Supabase (PostgreSQL, Auth, Real-time)
+- **Styling**: Tailwind CSS, shadcn/ui components
+- **Icons**: Lucide React
 
-- **User Authentication & Roles**  
-  Secure login, animated onboarding, and role-based access, ensuring smooth and safe navigation.
+## Getting Started
 
----
+### Prerequisites
 
-## 📦 Tech Stack
+- Node.js 18+ installed
+- A Supabase account and project
 
-- **Frontend:** React.js (with Framer Motion & Lottie for animations), Bootstrap/TailwindCSS
-- **Backend:** Node.js, Express.js
-- **Database:** MongoDB
-- **APIs:** RESTful endpoints for seamless integration
-- **Visualization:** Chart.js, D3.js, Mapbox GL
+### Installation
 
----
+1. **Clone the repository**
+   \`\`\`bash
+   git clone <your-repo-url>
+   cd supply-chalao
+   \`\`\`
 
-## 🖥️ UI Highlights
+2. **Install dependencies**
+   \`\`\`bash
+   npm install
+   \`\`\`
 
-- **Animated Page Transitions:**  
-  Smooth fade-ins, slide transitions, and loading spinners for a polished look.
+3. **⚠️ CRITICAL: Set up environment variables**
+   \`\`\`bash
+   cp .env.example .env.local
+   \`\`\`
+   
+   **You MUST fill in your Supabase credentials:**
+   \`\`\`env
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+   \`\`\`
+   
+   **Where to find these values:**
+   - Go to your Supabase project dashboard
+   - Navigate to Settings → API
+   - Copy the "Project URL" and "Project API keys" → "anon public"
 
-- **Lottie Animations:**  
-  Engaging supply chain and logistics animations using [LottieFiles](https://lottiefiles.com/).
+4. **Set up the database**
+   - Go to your Supabase project dashboard
+   - Navigate to the SQL Editor
+   - Copy and run the entire SQL script from `scripts/create-tables.sql`
+   - This creates all necessary tables and security policies
 
-- **Interactive Graphs:**  
-  Animated graphs for inventory, orders, and supplier performance.
+5. **Run the development server**
+   \`\`\`bash
+   npm run dev
+   \`\`\`
 
-- **Real-time Map Updates:**  
-  Delivery vehicles and shipments animate across the map as their status changes.
+6. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
----
+## ⚠️ Troubleshooting
 
-## 🛠️ Installation
+### "supabaseUrl is required" Error
+This means your environment variables are not configured. Make sure:
+- You have a `.env.local` file in your project root
+- The file contains both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- You've restarted your development server after adding the variables
 
-```bash
-git clone https://github.com/AmlanAmrutansu/supplychalao.git
-cd supplychalao
-npm install
-npm start
-```
+### Database Errors
+Make sure you've run the SQL script from `scripts/create-tables.sql` in your Supabase dashboard.
 
----
+## Database Schema
 
-## 📝 Usage
+The application uses the following tables:
 
-1. Register or login as a user (admin, supplier, or manager).
-2. Add inventory items and manage stock levels.
-3. Place orders and track their progress in the animated dashboard.
-4. Visualize analytics and optimize your supply chain.
+- **users**: User profiles and information
+- **orders**: Supply orders with status tracking
+- **messages**: Team communication messages
+- **settings**: User preferences and app settings
 
----
+## Deployment
 
+### Netlify
 
-## 🤝 Contributing
+1. Build the project:
+   \`\`\`bash
+   npm run build
+   \`\`\`
+
+2. Deploy the `out` folder to Netlify
+
+3. **IMPORTANT**: Set environment variables in Netlify dashboard:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+### Vercel (Recommended)
+
+1. Connect your GitHub repository to Vercel
+2. **IMPORTANT**: Set environment variables in Vercel dashboard
+3. Deploy automatically on push
+
+## Features Overview
+
+### Authentication
+- Email/password registration and login
+- Protected routes with automatic redirects
+- User session management
+
+### Dashboard
+- Welcome message with user name
+- Order overview with status badges
+- Quick actions for creating/editing orders
+- Real-time order updates
+
+### Order Management
+- Create new orders with title, description, and status
+- Edit existing orders
+- Delete orders with confirmation
+- Status tracking (Pending, In Progress, Delivered, Cancelled)
+
+### Messaging System
+- Real-time team chat
+- Message history
+- User identification in messages
+- Auto-scroll to latest messages
+
+### Settings
+- Profile management (name, email)
+- Password updates
+- Application preferences
+- Notification settings
+
+## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/awesome-feature`)
-3. Commit your changes (`git commit -m 'Add some feature'`)
-4. Push to the branch (`git push origin feature/awesome-feature`)
-5. Open a pull request
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
----
+## Support
 
-## 📄 License
+For support, please contact [your-email@example.com] or create an issue in the repository.
 
-Copyright (c) 2025 Ravi Narayan Mohapatra
+## License
 
-All rights reserved.
-
-Unauthorized copying of this file, via any medium is strictly prohibited.
-Proprietary and confidential.
-
-Written permission must be obtained from the author (Ravi Narayan Mohapatra) for any use.
-
-
-## 💡 Inspiration
-
-SupplyChalao was built out of the need to make supply chain management more transparent, efficient, and visually engaging. The project aims to combine powerful business logic with beautiful UI/UX, making logistics management a delightful experience.
-
----
-
-## 📬 Contact
-
-For queries, suggestions, or feedback, please contact [Amlan Amrutansu](mailto:amlanamrutansu@gmail.com).
-
----
-
-> _Empowering supply chains, one animation at a time!_
+This project is licensed under the MIT License.

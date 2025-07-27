@@ -214,6 +214,130 @@ export default function DashboardPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Zone-wise Order Summary */}
+          <div className="mt-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Zone-wise Order Summary</CardTitle>
+                <CardDescription>Track orders and MOQ progress across different zones</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Zone A */}
+                  <div className="bg-white border rounded-lg p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Zone A</h3>
+                      <Badge className={52 >= 100 ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
+                        {52 >= 100 ? "✅ MOQ Met" : "⚠️ Below MOQ"}
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Total Orders</span>
+                        <span className="font-medium">{52}</span>
+                      </div>
+
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">MOQ Required</span>
+                        <span className="font-medium">100</span>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Progress</span>
+                          <span className="font-medium">{Math.min(52, 100)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              52 >= 100 ? "bg-green-500" : "bg-yellow-500"
+                            }`}
+                            style={{ width: `${Math.min((52 / 100) * 100, 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Zone B */}
+                  <div className="bg-white border rounded-lg p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Zone B</h3>
+                      <Badge className={87 >= 100 ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
+                        {87 >= 100 ? "✅ MOQ Met" : "⚠️ Below MOQ"}
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Total Orders</span>
+                        <span className="font-medium">{87}</span>
+                      </div>
+
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">MOQ Required</span>
+                        <span className="font-medium">100</span>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Progress</span>
+                          <span className="font-medium">{Math.min(87, 100)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              87 >= 100 ? "bg-green-500" : "bg-yellow-500"
+                            }`}
+                            style={{ width: `${Math.min((87 / 100) * 100, 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Zone C */}
+                  <div className="bg-white border rounded-lg p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Zone C</h3>
+                      <Badge className={103 >= 100 ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
+                        {103 >= 100 ? "✅ MOQ Met" : "⚠️ Below MOQ"}
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Total Orders</span>
+                        <span className="font-medium">{103}</span>
+                      </div>
+
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">MOQ Required</span>
+                        <span className="font-medium">100</span>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Progress</span>
+                          <span className="font-medium">{Math.min(103, 100)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              103 >= 100 ? "bg-green-500" : "bg-yellow-500"
+                            }`}
+                            style={{ width: `${Math.min((103 / 100) * 100, 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </ProtectedRoute>
